@@ -1,0 +1,463 @@
+import Navbar from './componentes/Navbar';
+import Hero from './componentes/Hero';
+import Servicios from './componentes/Servicios';
+import Soluciones from './componentes/Soluciones';
+import CalculadoraIntegral from './componentes/CalculadoraIntegral';
+import Planes from './componentes/Planes';
+import Testimonios from './componentes/Testimonios';
+import FAQ from './componentes/FAQ';
+import Contacto from './componentes/Contacto';
+import Footer from './componentes/Footer';
+
+const CalculadoraIntegral = () => {
+  const [datos, setDatos] = useState({
+    panelW: "",
+    cantidadPaneles: "",
+    precioInversor: "",
+    precioBateria: "",
+    cantidadBaterias: "",
+    precioEstructura: "",
+    precioInstalacion: "",
+    pesoKg: "",
+    tipoTecho: "0.05",
+    region: "5000",
+    complejidad: "0",
+    subsidio: "0",
+    envio: "1.0",
+    garantia: "0.02",
+    planPago: "contado",
+    tasaMensual: 0,
+    cuotas: 1,
+    tipoPie: "porcentaje",
+    valorPie: "",
+  });
+
+  const [resultado, setResultado] = useState(null);
+  const [advertencia, setAdvertencia] = useState("");
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setDatos({ ...datos, [name]: value });
+  };
+
+  const limpiarFormulario = () => {
+    setDatos({
+      panelW: "",
+      cantidadPaneles: "",
+      precioInversor: "",
+      precioBateria: "",
+      cantidadBaterias: "",
+      precioEstructura: "",
+      precioInstalacion: "",
+      pesoKg: "",
+      tipoTecho: "0.05",
+      region: "5000",
+      complejidad: "0",
+      subsidio: "0",
+      envio: "1.0",
+      garantia: "0.02",
+      planPago: "contado",
+      tasaMensual: 0,
+      cuotas: 1,
+      tipoPie: "porcentaje",
+      valorPie: "",
+    });
+    setResultado(null);
+    setAdvertencia("");
+  };
+
+  const calcular = () => {
+    // Conversión a números
+    const n = (v) => parseFloat(v) || 0;
+    const panelW = n(datos.panelW);
+    const cantidadPaneles = n(datos.cantidadPaneles);
+    const precioInversor = n(datos.precioInversor);
+    const precioBateria = n(datos.precioBateria);
+    const cantidadBaterias = n(datos.cantidadBaterias);
+    const precioEstructura = n(datos.precioEstructura);
+    const precioInstalacion = n(datos.precioInstalacion);
+    const pesoKg = n(datos.pesoKg);
+    const tipoTecho = n(datos.tipoTecho);
+    const regionBase = n(datos.region);
+    const complejidad = n(datos.complejidad);
+    const subsidio = n(datos.subsidio);
+    const envioMult = n(datos.envio);
+    const garantia = n(datos.garantia);
+    const valorPie = n(datos.valorPie);
+
+    // Calcular potencia
+    const potenciaKW = (panelW * cantidadPaneles) / 1000;
+    if (potenciaKW > 7 && cantidadBaterias === 0) {
+      setAdvertencia(
+        "⚠️ Potencia estimada superior a 7 kW. Se recomienda considerar almacenamiento para estabilidad del sistema."
+      );
+    } else {
+      setAdvertencia("");
+    }
+
+    // Subtotal equipos
+    const subtotalEquipos =
+      precioInversor +
+      precioEstructura +
+      (precioBateria * cantidadBaterias);
+
+    // Recargo por tipo de techo
+    const recargoTecho = subtotalEquipos * tipoTecho;
+
+    // Subtotal tras recargo
+    const equiposConRecargo = subtotalEquipos + recargoTecho;
+
+    // Subsidio
+    const descuentoSubsidio = equiposConRecargo * subsidio;
+    const equiposConSubsidio = equiposConRecargo - descuentoSubsidio;
+
+    // Instalación
+    const instalacionFinal = precioInstalacion + precioInstalacion * complejidad;
+
+    // Garantía
+    const costoGarantia = subtotalEquipos * garantia;
+
+    // Envío
+    const costoEnvioBase = regionBase + pesoKg * 700;
+    const costoEnvio = costoEnvioBase * envioMult;
+
+    // IVA
+    const iva = 0.19 * (equiposConSubsidio + instalacionFinal);
+
+    // Total antes de financiar
+    const totalAntesFinanciar =
+      equiposConSubsidio + instalacionFinal + iva + costoEnvio + costoGarantia;
+
+    // Financiamiento
+    let cuotas = 1;
+    let tasaMensual = 0;
+
+    switch (datos.planPago) {
+      case "6":
+        cuotas = 6;
+        tasaMensual = 0.012;
+        break;
+      case "12":
+        cuotas = 12;
+        tasaMensual = 0.011;
+        break;
+      case "24":
+        cuotas = 24;
+        tasaMensual = 0.01;
+        break;
+      default:
+        cuotas = 1;
+        tasaMensual = 0;
+    }
+
+    // Pie
+    let pie = 0;
+    if (datos.tipoPie === "porcentaje") {
+      pie = totalAntesFinanciar * (valorPie / 100);
+    } else {
+      pie = valorPie;
+    }
+    if (pie > totalAntesFinanciar) pie = totalAntesFinanciar;
+
+    const montoFinanciar = totalAntesFinanciar - pie;
+    const interesTotal = montoFinanciar * tasaMensual * cuotas;
+    const cuota =
+      cuotas > 1 ? (montoFinanciar + interesTotal) / cuotas : totalAntesFinanciar;
+
+    setResultado({
+      potenciaKW,
+      subtotalEquipos,
+      recargoTecho,
+      descuentoSubsidio,
+      instalacionFinal,
+      iva,
+      costoEnvio,
+      costoGarantia,
+      totalAntesFinanciar,
+      pie,
+      interesTotal,
+      cuota,
+      totalFinal: pie + montoFinanciar + interesTotal,
+      cuotas,
+    });
+  };
+
+  return (
+    <section id="demo-calculadora" className="py-5 bg-light">
+      <Container>
+        <h2 className="text-center mb-4 text-primary fw-bold">
+          DEMO - Calculadora Integral de Sistemas Solares
+        </h2>
+        <Row className="g-4">
+          {/* Formulario */}
+          <Col xs={12} lg={6}>
+            <Form className="p-3 bg-white rounded shadow-sm">
+              <h5 className="text-secondary mb-3">Datos de Equipos</h5>
+              <Form.Group className="mb-2">
+                <Form.Label>Potencia del panel (W)</Form.Label>
+                <Form.Control
+                  type="number"
+                  name="panelW"
+                  value={datos.panelW}
+                  onChange={handleChange}
+                  placeholder="Ej: 450"
+                  min="0"
+                  required
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label>Cantidad de paneles</Form.Label>
+                <Form.Control
+                  type="number"
+                  name="cantidadPaneles"
+                  value={datos.cantidadPaneles}
+                  onChange={handleChange}
+                  placeholder="Ej: 10"
+                  min="0"
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label>Precio Inversor ($)</Form.Label>
+                <Form.Control
+                  type="number"
+                  name="precioInversor"
+                  value={datos.precioInversor}
+                  onChange={handleChange}
+                  placeholder="Ej: 1200000"
+                  min="0"
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label>Precio por batería ($)</Form.Label>
+                <Form.Control
+                  type="number"
+                  name="precioBateria"
+                  value={datos.precioBateria}
+                  onChange={handleChange}
+                  placeholder="Ej: 400000"
+                  min="0"
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label>Cantidad de baterías</Form.Label>
+                <Form.Control
+                  type="number"
+                  name="cantidadBaterias"
+                  value={datos.cantidadBaterias}
+                  onChange={handleChange}
+                  placeholder="Ej: 2"
+                  min="0"
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label>Estructuras y cableado ($)</Form.Label>
+                <Form.Control
+                  type="number"
+                  name="precioEstructura"
+                  value={datos.precioEstructura}
+                  onChange={handleChange}
+                  placeholder="Ej: 300000"
+                  min="0"
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label>Instalación base ($)</Form.Label>
+                <Form.Control
+                  type="number"
+                  name="precioInstalacion"
+                  value={datos.precioInstalacion}
+                  onChange={handleChange}
+                  placeholder="Ej: 500000"
+                  min="0"
+                />
+              </Form.Group>
+              <Form.Group className="mb-2">
+                <Form.Label>Peso estimado del envío (kg)</Form.Label>
+                <Form.Control
+                  type="number"
+                  name="pesoKg"
+                  value={datos.pesoKg}
+                  onChange={handleChange}
+                  placeholder="Ej: 120"
+                  min="0"
+                />
+              </Form.Group>
+
+              <h5 className="text-secondary mt-4 mb-2">Factores adicionales</h5>
+              <Form.Select
+                className="mb-2"
+                name="tipoTecho"
+                value={datos.tipoTecho}
+                onChange={handleChange}
+              >
+                <option value="0.05">Teja / Asfalto (+5%)</option>
+                <option value="0.02">Zinc / Planchas (+2%)</option>
+                <option value="0.07">Hormigón (+7%)</option>
+              </Form.Select>
+              <Form.Select
+                className="mb-2"
+                name="region"
+                value={datos.region}
+                onChange={handleChange}
+              >
+                <option value="5000">Región Metropolitana ($5.000)</option>
+                <option value="9000">Zona Norte ($9.000)</option>
+                <option value="10000">Zona Sur ($10.000)</option>
+                <option value="15000">Zona Austral ($15.000)</option>
+              </Form.Select>
+              <Form.Select
+                className="mb-2"
+                name="complejidad"
+                value={datos.complejidad}
+                onChange={handleChange}
+              >
+                <option value="0">Instalación Baja (0%)</option>
+                <option value="0.08">Media (+8%)</option>
+                <option value="0.15">Alta (+15%)</option>
+              </Form.Select>
+              <Form.Select
+                className="mb-2"
+                name="subsidio"
+                value={datos.subsidio}
+                onChange={handleChange}
+              >
+                <option value="0">Sin subsidio</option>
+                <option value="-0.08">Residencial (-8%)</option>
+                <option value="-0.05">Pyme (-5%)</option>
+              </Form.Select>
+              <Form.Select
+                className="mb-2"
+                name="envio"
+                value={datos.envio}
+                onChange={handleChange}
+              >
+                <option value="1.0">Envío estándar</option>
+                <option value="1.2">Envío exprés (+20%)</option>
+              </Form.Select>
+              <Form.Select
+                className="mb-2"
+                name="garantia"
+                value={datos.garantia}
+                onChange={handleChange}
+              >
+                <option value="0.02">Garantía 12 meses (+2%)</option>
+                <option value="0.04">Garantía 24 meses (+4%)</option>
+                <option value="0.06">Garantía 36 meses (+6%)</option>
+              </Form.Select>
+
+              <h5 className="text-secondary mt-4 mb-2">Financiamiento</h5>
+              <Form.Select
+                className="mb-2"
+                name="planPago"
+                value={datos.planPago}
+                onChange={handleChange}
+              >
+                <option value="contado">Contado (0%)</option>
+                <option value="6">6 cuotas (1.2% mensual)</option>
+                <option value="12">12 cuotas (1.1% mensual)</option>
+                <option value="24">24 cuotas (1.0% mensual)</option>
+              </Form.Select>
+              <Form.Select
+                className="mb-2"
+                name="tipoPie"
+                value={datos.tipoPie}
+                onChange={handleChange}
+              >
+                <option value="porcentaje">Pie en porcentaje</option>
+                <option value="monto">Pie en monto fijo</option>
+              </Form.Select>
+              <Form.Control
+                type="number"
+                name="valorPie"
+                value={datos.valorPie}
+                onChange={handleChange}
+                placeholder="Ej: 20 o 500000"
+                min="0"
+              />
+
+              <div className="d-flex gap-2 mt-3">
+                <Button variant="success" onClick={calcular}>
+                  Calcular
+                </Button>
+                <Button variant="secondary" onClick={limpiarFormulario}>
+                  Reiniciar
+                </Button>
+              </div>
+            </Form>
+          </Col>
+
+          {/* Resultados */}
+          <Col xs={12} lg={6}>
+            {advertencia && <Alert variant="warning">{advertencia}</Alert>}
+            {resultado && (
+              <Table striped bordered hover responsive className="bg-white shadow-sm">
+                <tbody>
+                  <tr>
+                    <th>Potencia estimada (kW)</th>
+                    <td>{resultado.potenciaKW.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <th>Subtotal equipos</th>
+                    <td>${resultado.subtotalEquipos.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>Recargo techo</th>
+                    <td>${resultado.recargoTecho.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>Subsidio</th>
+                    <td>${resultado.descuentoSubsidio.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>Instalación final</th>
+                    <td>${resultado.instalacionFinal.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>IVA (19%)</th>
+                    <td>${resultado.iva.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>Envío</th>
+                    <td>${resultado.costoEnvio.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>Garantía</th>
+                    <td>${resultado.costoGarantia.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>Total antes de financiar</th>
+                    <td>${resultado.totalAntesFinanciar.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <th>Pie</th>
+                    <td>${resultado.pie.toLocaleString()}</td>
+                  </tr>
+                  {resultado.cuotas > 1 && (
+                    <>
+                      <tr>
+                        <th>Interés total</th>
+                        <td>${resultado.interesTotal.toLocaleString()}</td>
+                      </tr>
+                      <tr>
+                        <th>Cuota mensual ({resultado.cuotas}x)</th>
+                        <td>${resultado.cuota.toLocaleString()}</td>
+                      </tr>
+                    </>
+                  )}
+                  <tr>
+                    <th>Total final</th>
+                    <td className="fw-bold text-success">
+                      ${resultado.totalFinal.toLocaleString()}
+                    </td>
+                  </tr>
+                </tbody>
+              </Table>
+            )}
+          </Col>
+        </Row>
+      </Container>
+    </section>
+  );
+};
+
+export default CalculadoraIntegral;
